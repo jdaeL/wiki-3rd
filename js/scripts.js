@@ -72,9 +72,9 @@ function loginResponse(xml) {
  * termina invocando a las functiones showWelcome y showMenuUserLogged
  */
 function showLoggedIn() {
-
-
-
+    document.getElementById('userName').innerHTML = userFullName;
+    showWelcome();
+    showMenuUserLogged();
 }
 
 
@@ -85,10 +85,19 @@ function showLoggedIn() {
  * función doCreateAccount
  * */
 function showCreateAccount() {
-
-
-
-
+    let html = `<link rel="stylesheet" type="text/css" href="css/myStyle.css">
+    <h1>Registro</h1>
+    <div class="form">
+      <input placeholder="Usuario..." type='text' id='user' name='user'>
+      <input placeholder="Contraseña..." type='password' id='password' name='password'>
+      <input placeholder="Nombre..." type='text' id='first' name='first'>
+      <input placeholder="Apellido..." type='text' id='last' name='last'>
+      <input type='submit' value='Registrarse' onclick="doCreateAccount()">
+    </div>
+    <div class="card" id="error">
+    </div>`;
+  
+    document.getElementById('main').innerHTML = html;
 }
 
 /* Esta función extraerá los datos ingresados en el formulario de
