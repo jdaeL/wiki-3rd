@@ -5,128 +5,79 @@ use CGI;
 use DBI;
 
 my $q = CGI->new;
-print $q->header('text/html');
+print $q->header('text/html;charset=UTF-8');
 
-my $title = $q->param('title');
+my @registro;
 my $owner = $q->param('owner');
+my $title = $q->param('title');
 
-if(defined($title) && defined($owner) && check($title, $owner)){
-  my @text = check($title, $owner);
-  my $cuerpoXML= renderBody(@text);
-  print renderHTML($cuerpoXML);
-}else{
-  print renderHTML();
+if(defined($owner) and defined($title)){
+  if(checkOwnerTitle($owner, $title)){
+    foreach my $linea (@registro){
+    $linea =~ s/^\s+//g;
+    if($linea =~ /^(#+)(.*)/){
+      if($linea =~ /^#{6}(.*)/){
+        print "<h6>$1</h6>\n";
+      }
+      elsif($linea =~ /^#{3}(.*)/){
+        print "<h3>$1</h3>\n";
+      }
+      elsif($linea =~ /^#{2}(.*)/){
+        print "<h2>$1</h2>\n";
+      }
+      elsif($linea =~ /^#{1}(.*)/){
+        print "<h1>$1</h1>\n";
+      }
+    }
+    if($linea =~ /^(\+)(.)(\*+)$/){
+       if($linea =~ /^\{3}(.)\*{3}$/){
+        print "<p><strong><em>$1</em></strong></p>";
+      }
+      elsif($linea =~ /^\{2}(.)\_(.)\_(.)\*{2}$/){
+        print "<p><strong>$1<em>$2</em>$3</strong></p>";
+      }
+      elsif($linea =~ /^\{2}(.)\*{2}/){
+        print "<p><strong>$1</strong></p>"
+      }
+       elsif($linea =~ /^\{1}(.)\*{1}$/){
+        print "<p><em>$1</em></p>";
+       }
+      }
+    if($linea =~ /^{2}(.*){2}$/){
+     print "<p><del>$1</del></p>";
+   }
+   if($linea =~ /^(.)\[(.)\]\((.)\)(.)/){
+    print "<p>$1<a href=$3>$2</a>$4</p>";
+   }
+   if(!(index($linea, "`") != -1) and !(index($linea, "#") != -1) and !(index($linea, "~") != -1) and !(index($linea, "*") != -1) and !(index($linea, "]") != -1)){
+    print "<p>$linea</p>";
+   }
+   if($linea =~ /^`{3}((\n*.+)*)\n`{3}$/){
+      print "<p><code>$1</code></p>";
+   }
+  }
+} else{
+    print "<p></p>";
+  }
 }
-sub check{
+
+sub checkOwnerTitle{
+  my $ownerQuery = $_[0];
+  my $titleQuery = $_[1];
+
   my $user = 'root';
   my $password = '71950727joe#';
-  my $title = $_[0];
-  my $owner = $_[1];
   my $dsn = 'DBI:mysql:database=wiki;host=localhost';
   my $dbh = DBI->connect($dsn, $user, $password) or die("No se pudo conectar!");
-  my $sql = "SELECT text FROM articles WHERE title=? AND owner=?";
+  my $sql = "SELECT text FROM Articles WHERE owner=? and title=?";
   my $sth = $dbh->prepare($sql);
-  $sth->execute($title, $owner);
-  my @row = $sth->fetchrow_array;
+  $sth->execute($ownerQuery, $titleQuery);
+  my $i = 0;
+  while(my @row = $sth->fetchrow_array){
+    @registro = split(';',$row[0]);
+    $i++;
+  }
   $sth->finish;
   $dbh->disconnect;
-  return @row;
-}
-
-sub renderHTML{
-  my $cuerpo = "";
-  if(defined($_[0])){
-    $cuerpo .= $_[0];
-  }
-    my $html = <<"HTML";
-    <div> <p>
-      $cuerpo
-    </p> </div>
-HTML
-return $html;
-}
-
-sub renderBody{
-  my $texto = $_[0];
-  my $line = "";
-  my $body = "";
-
-  my @temporal = split(/\n+/, $texto);
-  my $valor = 1;
-  for(my $i = 0; $i < @temporal; $i++){
-    my @temporal2 = evaluar($temporal[$i], $valor);
-    $valor = $temporal2[1];
-    $body .= $temporal2[0]."\n";
-  }
-  return $body;
-}
-
-sub evaluar{
-  my $line = $_[0];
-  my $valor = $_[1];
-  my @temporal2;
-  if ($line =~ /^(######)(.+)/){
-    $temporal2[0] = "<h6>".$2."</h6>";
-    $temporal2[1] = $valor;
-    return @temporal2;
-  }
-  if ($line =~ /^(###)(.+)/){
-    $temporal2[0] = "<h3>".$2."</h3>";
-    $temporal2[1] = $valor;
-    return @temporal2;
-  }
-  if ($line =~ /^(##)(.+)/){
-    $temporal2[0] = "<h2>".$2."</h2>";
-    $temporal2[1] = $valor;
-    return @temporal2;
-  }
-  if ($line =~ /^(#)(.+)/){
-    $temporal2[0] = "<h1>".$2."</h1>";
-    $temporal2[1] = $valor;
-    return @temporal2;
-  }
-  if ($line =~ /^(\*\*\*)(.+)(\*\*\*)/){
-    $temporal2[0] = "<i><b>".$2."</b></i><br>";
-    $temporal2[1] = $valor;
-    return @temporal2;
-  }
-  if ($line =~ /^(\*\*)(.+)(\*\*)/){
-    if ($line =~ /^(\*\*)(.+)(\_)(.+)(\_)(.+)(\*\*)/){
-      $temporal2[0] = "<b>".$2."<i>".$4."</i>".$6."</b><br>";
-      $temporal2[1] = $valor;
-      return @temporal2;
-    }
-    $temporal2[0] = "<b>".$2."</b><br>";
-    $temporal2[1] = $valor;
-    return @temporal2;
-  }
-  if ($line =~ /^(\*)(.+)(\*)/){
-    $temporal2[0] = "<i>".$2."</i><br>";
-    $temporal2[1] = $valor;
-    return @temporal2;
-  }
-  if ($line =~ /^(\`\`\`)/){
-    if($valor == 1){
-      $temporal2[0] = "<code><br>";
-      $temporal2[1] = 0;
-      return @temporal2;
-    }else{
-      $temporal2[0] = "</code><br>";
-      $temporal2[1] = 1;
-      return @temporal2;
-    }
-  }
-  if ($line =~ /([^\[]*)(\[)(.+)(\])(\()(.+)(\))/){
-    $temporal2[0] = "<a>".$1."<a href='".$6."'>".$3."</a></a><br>";
-    $temporal2[1] = $valor;
-    return @temporal2;
-  }
-  if ($line =~ /^(\~)(.+)(\~)/){
-    $temporal2[0] = "<del>".$2."</del><br>";
-    $temporal2[1] = $valor;
-    return @temporal2;
-  }
-  $temporal2[0] = "<a>$line</a><br>";
-  $temporal2[1] = $valor;
-  return @temporal2;
+  return @registro;
 }

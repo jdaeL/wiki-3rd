@@ -4,29 +4,73 @@ use warnings;
 use CGI;
 use DBI;
 
-#Recibe los párametros del formulario
 my $q = CGI->new;
-my $title = $q->param('title');
-my $text = $q->param('text');
+print $q->header('text/xml;charset=UTF-8');
+
+my @row;
 my $owner = $q->param('owner');
+my $text = $q->param('text');
+my $title = $q->param('title');
 
-#Imprime el XML
-print $q->header('text/xml');
-print "<?xml version='1.0' encoding='utf-8' ?>\n";
+if(defined($owner) and defined($text) and defined($title)){
+  if(checkOwnerTitle($owner, $title)){
+    updateText($owner, $text, $title);
+    checkOwnerTitle($owner, $title);
+    showTag(@row);
+  }else{
+    showTag();
+  }
+}else{
+  showTag();
+}
 
-#Establece la conexión a la base de datos
-my $user = 'root';
-my $password = '71950727joe#';
-my $dsn = "DBI:mysql:database=wiki;host=localhost";
-my $dbh = DBI->connect($dsn,$user,$password) or die("No se pudo conctar!");
+sub checkOwnerTitle{
+  my $ownerQuery = $_[0];
+  my $titleQuery = $_[1];
 
-my $sth = $dbh->prepare("UPDATE Articles SET text=? WHERE title=? AND owner=?");
-$sth->execute($text,$title,$owner);
+  my $user = 'root';
+  my $password = '71950727joe#';
+  my $dsn = 'DBI:mysql:database=wiki;host=localhost';
+  my $dbh = DBI->connect($dsn, $user, $password) or die("No se pudo conectar!");
+  my $sql = "SELECT * FROM Articles WHERE owner=? and title=?";
+  my $sth = $dbh->prepare($sql);
+  $sth->execute($ownerQuery, $titleQuery);
+  @row = ($sth->fetchrow_array);
+  $sth->finish;
+  $dbh->disconnect;
+  return @row;
+}
 
-print "<article>\n";
-print "<title>$title</title>\n";
-print "<text>$text</text>\n";
-print "</article>\n";
+sub updateText{
+  my $ownerQuery = $_[0];
+  my $textQuery = $_[1];
+  my $titleQuery = $_[2];
 
-$sth->finish;
-$dbh->disconnect;
+  my $user = 'root';
+  my $password = '71950727joe#';
+  my $dsn = 'DBI:mysql:database=wiki;host=localhost';
+  my $dbh = DBI->connect($dsn, $user, $password) or die("No se pudo conectar!");
+
+  my $sql = "UPDATE Articles SET text=? WHERE owner=? AND title=?";
+  my $sth = $dbh->prepare($sql);
+  $sth->execute($textQuery, $ownerQuery, $titleQuery);
+  $sth->finish;
+  $dbh->disconnect;
+}
+
+sub showTag{
+  my @rowQuery = @_;
+  if(@rowQuery){
+    print<<XML;
+    <article>
+      <title>$rowQuery[0]</title>
+      <text>$rowQuery[2]</text>
+    </article>
+XML
+  }else{
+    print<<XML;
+    <article>
+    </article>
+XML
+  }
+}

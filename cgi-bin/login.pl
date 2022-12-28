@@ -1,72 +1,61 @@
 #!C:\xampp\perl\bin\perl.exe
+
 use strict;
 use warnings;
 use CGI;
 use DBI;
+binmode(STDOUT, ":utf8");
 
-my $q=CGI->new;
-print $q -> header('text/xml');
-my $userName=$q->param("userName");
-my $password=$q->param("password");
+my $q = CGI->new;
+print $q->header('text/xml;charset=UTF-8');
 
-if(defined($userName) and defined($password) ){
-    if(checkLogin($userName,$password)){
-        my @arr=checkLogin($userName,$password);
-        successLogin($arr[0],$arr[3],$arr[2]);
-    }
-    else{
-        showLogin();
-    }
-}
-else{
+my @row;
+my $user = $q->param('user');
+my $password = $q->param('password');
+
+
+if(defined($user) and defined($password)){
+  if(checkLogin($user, $password)){
+    successLogin();
+  }else{
     showLogin();
+  }
+}else{
+  showLogin();
 }
 
 sub checkLogin{
-    my $userQuery=$_[0];
-    my $passwordQuery=$_[1];
+  my $userQuery = $_[0];
+  my $passwordQuery = $_[1];
 
-    my $user = 'root';
-    my $password= '71950727joe#';
-    my $dsn ='DBI:mysql:database=wiki;host=localhost';
-    my $dbh = DBI ->connect($dsn,$user,$password) or die ("No se pudo conectar");
+  my $user = 'root';
+  my $password = '71950727joe#';
+  my $dsn = 'DBI:mysql:database=wiki;host=localhost';
+  my $dbh = DBI->connect($dsn, $user, $password) or die("No se pudo conectar!");
 
-    my $sql="SELECT * FROM Users WHERE userName=? AND password=?";
-    my $sth=$dbh->prepare($sql);
-    $sth->execute($userQuery,$passwordQuery);
-    my @row=$sth->fetchrow_array;
-    $sth->finish;
-    $dbh->disconnect;
-    return @row;
+  my $sql = "SELECT * FROM Users WHERE userName=? AND password=?";
+  my $sth = $dbh->prepare($sql);
+  $sth->execute($userQuery, $passwordQuery);
+  @row = $sth->fetchrow_array;
+  $sth->finish;
+  $dbh->disconnect;
+  return @row;
 }
 
-sub successLogin{            
-    my $owner= $_[0];
-    my $firstNameQuery1= $_[1];
-    my $lastNameQuery1 = $_[2];
-    my $body=<<XML;
-    <user>
-        <owner>$owner</owner>
-        <firstName>$firstNameQuery1</firstName>
-        <lastName>$lastNameQuery1</lastName>
-    </user>
+sub showLogin{
+print <<XML;
+<user>
+</user>  
 XML
-        print(renderBody($body));
 }
 
+sub successLogin{
+print <<XML;
+<user>
+  <owner>$row[0]</owner>
+  <firstName>$row[3]</firstName>
+  <lastName>$row[2]</lastName>
+</user>
+XML
+}
 
-sub showRegister{            
-    my $body=<<XML;
-    <user>
-    </user>
-XML
-        print(renderBody($body));
-}
-sub renderBody{
-    my $body=$_[0];
-    my $xml=<<XML;
-<?xml version="1.0" encoding="UTF-8"?>
-$body
-XML
-    return $xml;
-}

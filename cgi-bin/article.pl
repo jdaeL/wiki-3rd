@@ -4,31 +4,47 @@ use warnings;
 use CGI;
 use DBI;
 
-#Recibe los párametros del formulario
 my $q = CGI->new;
+print $q->header('text/xml;charset=UTF-8');
+
+my @row;
 my $owner = $q->param('owner');
 my $title = $q->param('title');
 
-print $q->header('text/xml');
-print "<?xml version='1.0' encoding='utf-8'?>\n";
+if(defined($owner) and defined($title)){
+  if(checkOwnerTitle($owner, $title)){
+    showTag(@row);
+  }else{
+    showTag();
+  }
+}else{
+  showTag();
+}
 
-my $user = 'root';
-my $password = '71950727joe#';
-my $dsn = "DBI:mysql:database=wiki;host=localhost";
-my $dbh = DBI->connect($dsn, $user, $password) or die("No se pudo conectar!");
+sub checkOwnerTitle{
+  my $ownerQuery = $_[0];
+  my $titleQuery = $_[1];
 
-my $sth = $dbh->prepare("SELECT * FROM Articles WHERE title=? AND owner=?");
-$sth->execute($title,$owner);
-my @row = $sth->fetchrow_array;
-$sth->finish;
-$dbh->disconnect;
+  my $user = 'root';
+  my $password = '71950727joe#';
+  my $dsn = 'DBI:mysql:database=wiki;host=localhost';
+  my $dbh = DBI->connect($dsn, $user, $password) or die("No se pudo conectar!");
+  my $sql = "SELECT * FROM Articles WHERE owner=? and title=?";
+  my $sth = $dbh->prepare($sql);
+  $sth->execute($ownerQuery, $titleQuery);
+  @row = ($sth->fetchrow_array);
+  $sth->finish;
+  $dbh->disconnect;
+  return @row;
+}
 
-if (@row){
+sub showTag{
+  my @rowQuery = @_;
   print "<article>\n";
-  print "<owner>$owner</owner>\n";
-  print "<title>$title</title>\n";
-  print "<text>$row[2]</text>\n";
-  print "</article>\n";
-} else {  
-  print "<article>\n</article>\n";
-}  
+  if(@rowQuery){
+      print "<owner>$rowQuery[1]</owner>\n";
+      print "<title>$rowQuery[0]</title>\n";
+      print "<text>$rowQuery[2]</text>\n";
+  }
+  print "</article>";
+}
