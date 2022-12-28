@@ -14,9 +14,7 @@ function showLogin() {
     </div>
     <div class="card" id="error">
     </div>`;
-
     document.getElementById('main').innerHTML = html;
-
 }
 
 /**
@@ -27,7 +25,6 @@ function showLogin() {
 function doLogin() {
     let name = document.getElementById('user').value;
     let pass = document.getElementById('password').value;
-
     if (name && pass) {
         var url = "cgi-bin/login.pl?user=" + name + "&password=" + pass;
         var promise = fetch(url);
@@ -41,7 +38,6 @@ function doLogin() {
     } else {
         document.getElementById('error').innerHTML = "<h1 style=color:#1ab188;background-color:red;padding:40px;>Ingrese los datos correctamente</h1>";
     }
-
 }
 
 /**
@@ -54,7 +50,6 @@ function doLogin() {
  */
 function loginResponse(xml) {
     var list = xml.getElementsByTagName('user')[0];
-
     if (xml.getElementsByTagName('owner')[0]) {
         console.log(list);
         userFullName = xml.getElementsByTagName('firstName')[0].textContent + " " + xml.getElementsByTagName('lastName')[0].textContent;
@@ -96,7 +91,6 @@ function showCreateAccount() {
     </div>
     <div class="card" id="error">
     </div>`;
-
     document.getElementById('main').innerHTML = html;
 }
 
@@ -109,7 +103,6 @@ function doCreateAccount() {
     let passw = document.getElementById('password').value;
     let firstN = document.getElementById('first').value;
     let lastN = document.getElementById('last').value;
-
     if (user && passw && firstN && lastN) {
         var url = "cgi-bin/register.pl?user=" + user + "&password=" + passw + "&firstName=" + firstN + "&lastName=" + lastN;
         var promise = fetch(url);
@@ -151,7 +144,6 @@ function doList() {
  * En caso de que lista de páginas esté vacia, deberá mostrar un mensaje
  * indicándolo.
  */
-
 function showList(xml) {
     if (xml.getElementsByTagName('title')[0]) {
         console.log("Error");
@@ -198,7 +190,6 @@ function showNew() {
     </div>
     <div class="card" id="error">
     </div>`;
-
     document.getElementById('main').innerHTML = html;
 }
 
@@ -212,19 +203,18 @@ function doNew() {
     let title = document.getElementById('title').value;
     let text = document.getElementById('text').value;
     let encodedText = encodeURIComponent(text);
-  
-    if(text && title){
-      var url = "cgi-bin/new.pl?owner="+userKey+"&title="+title+"&text="+encodedText;
-      var promise = fetch(url);
-      promise.then(response => response.text())
-        .then(data => {
-          var xml = (new window.DOMParser()).parseFromString(data, "text/xml");
-          responseNew(xml);
-      }).catch(error => {
-        console.log('Error:', error);
-      });
-    }else{
-      document.getElementById('error').innerHTML = "<h1 style=color:#1ab188;background-color:red;padding:40px;>Ingrese los datos correctamente</h1>";
+    if (text && title) {
+        var url = "cgi-bin/new.pl?owner=" + userKey + "&title=" + title + "&text=" + encodedText;
+        var promise = fetch(url);
+        promise.then(response => response.text())
+            .then(data => {
+                var xml = (new window.DOMParser()).parseFromString(data, "text/xml");
+                responseNew(xml);
+            }).catch(error => {
+                console.log('Error:', error);
+            });
+    } else {
+        document.getElementById('error').innerHTML = "<h1 style=color:#1ab188;background-color:red;padding:40px;>Ingrese los datos correctamente</h1>";
     }
 }
 
@@ -234,9 +224,15 @@ function doNew() {
  * correspondiera
  */
 function responseNew(response) {
-
-
-
+    let title = response.getElementsByTagName('title')[0];
+    let text = response.getElementsByTagName('text')[0];
+    if (response.getElementsByTagName('title')) {
+        let html = "<h1>" + title.textContent + "</h1><br>";
+        html += "<h3>" + text.textContent + "</h3>";
+        document.getElementById('main').innerHTML = html;
+    } else {
+        document.getElementById('error').innerHTML = "<h1 style=color:#1ab188;background-color:red;padding:40px;>Datos erróneos</h1>";
+    }
 }
 
 /*
@@ -244,9 +240,15 @@ function responseNew(response) {
  * atendida por responseView
  */
 function doView(owner, title) {
-
-
-
+    var url = "cgi-bin/view.pl?owner=" + owner + "&title=" + title;
+    var promise = fetch(url);
+    promise.then(response => response.text())
+        .then(data => {
+            console.log(data + " data");
+            responseView(data);
+        }).catch(error => {
+            console.log('Error:', error);
+        });
 }
 
 /*
@@ -254,9 +256,13 @@ function doView(owner, title) {
  * un mensaje de error en caso de algún problema.
  */
 function responseView(response) {
-
-
-
+    let html = response;
+    console.log(response + "response");
+    if (response) {
+        document.getElementById('main').innerHTML = html;
+    } else {
+        document.getElementById('main').innerHTML = "<h1 style=color:red;>Ocurrió un error inesperado</h1>";
+    }
 }
 
 /*
@@ -264,8 +270,14 @@ function responseView(response) {
  * borrar como argumentos, la respuesta del CGI debe ser atendida por doList
  */
 function doDelete(owner, title) {
-
-
+    var url = "cgi-bin/delete.pl?owner=" + owner + "&title=" + title;
+    var promise = fetch(url);
+    promise.then(response => response.text())
+        .then(data => {
+            doList();
+        }).catch(error => {
+            console.log('Error:', error);
+        });
 }
 
 /*
@@ -273,9 +285,16 @@ function doDelete(owner, title) {
  * article.pl la respuesta del CGI es procesada por responseEdit
  */
 function doEdit(owner, title) {
-
-
-
+    var url = "cgi-bin/article.pl?owner=" + owner + "&title=" + title;
+    var promise = fetch(url);
+    promise.then(response => response.text())
+        .then(data => {
+            var xml = (new window.DOMParser()).parseFromString(data, "text/xml");
+            console.log(xml);
+            responseEdit(xml);
+        }).catch(error => {
+            console.log('Error:', error);
+        });
 }
 
 /*
@@ -285,8 +304,24 @@ function doEdit(owner, title) {
  * - Cancelar que invoca a doList
  */
 function responseEdit(xml) {
-
-
+    let owner = xml.getElementsByTagName('owner')[0].textContent;
+    let title = xml.getElementsByTagName('title')[0].textContent;
+    let text = xml.getElementsByTagName('text')[0].textContent;
+    let html = `<link rel="stylesheet" type="text/css" href="css/myStyle.css">
+    <h1>Update</h1>
+    <div class="form">
+      <h2>Usuario: `+ owner + `</h2>
+      <br>
+      <h2>Título: `+ title + `</h2>
+      <br>
+      <textarea placeholder="Escribe el texto..." type='text' id='textUpdate' name='textUpdate' style="margin: 0px; width: 280px; max-width:280px; min-height: 267px;">`+ text + `</textarea>
+      <br><br>
+      <input type='submit' value='Actualizar' onclick=doUpdate("`+ title + `") style="font-size:15px;">
+      <input type='submit' value='Cancelar' onclick="doList()">
+    </div>
+    <div class="card" id="error">
+    </div>`;
+    document.getElementById('main').innerHTML = html;
 }
 
 /*
@@ -294,8 +329,19 @@ function responseEdit(xml) {
  * lo llenado en el formulario, invoca a update.pl
  * La respuesta del CGI debe ser atendida por responseNew
  */
-
 function doUpdate(title) {
-
-
+    let text = textUpdate.value;
+    console.log(text + " text");
+    let encodedText = encodeURIComponent(text);
+    var url = "cgi-bin/update.pl?owner=" + userKey + "&title=" + title + "&text=" + encodedText;
+    var promise = fetch(url);
+    promise.then(response => response.text())
+        .then(data => {
+            console.log(data);
+            var html = (new window.DOMParser()).parseFromString(data, "text/html");
+            console.log(html + "update");
+            responseNew(html);
+        }).catch(error => {
+            console.log('Error:', error);
+        });
 }
