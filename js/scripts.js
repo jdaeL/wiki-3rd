@@ -4,8 +4,18 @@
  * Modifica el tag div con id main en el html
  */
 function showLogin() {
+    let html = `<link rel="stylesheet" type="text/css" href="css/myStyle.css">
+    <h1>Login</h1>
+    <div class="form">
+      <input placeholder="Usuario..." type='text' id='user' name='user'>
+      <input placeholder="Contraseña..." type='password' id='password' name='password'>
+      <br>
+      <input type="submit" value="Ingresar" onclick="doLogin()">
+    </div>
+    <div class="card" id="error">
+    </div>`;
 
-
+    document.getElementById('main').innerHTML = html;
 
 }
 
@@ -15,9 +25,22 @@ function showLogin() {
  * La respuesta del CGI es procesada por la función loginResponse
  */
 function doLogin() {
+    let name = document.getElementById('user').value;
+    let pass = document.getElementById('password').value;
 
-
-
+    if (name && pass) {
+        var url = "cgi-bin/login.pl?user=" + name + "&password=" + pass;
+        var promise = fetch(url);
+        promise.then(response => response.text())
+            .then(data => {
+                var xml = (new window.DOMParser()).parseFromString(data, "text/xml");
+                loginResponse(xml);
+            }).catch(error => {
+                console.log('Error:', error);
+            });
+    } else {
+        document.getElementById('error').innerHTML = "<h1 style=color:#1ab188;background-color:red;padding:40px;>Ingrese los datos correctamente</h1>";
+    }
 
 }
 
@@ -30,9 +53,16 @@ function doLogin() {
  * indicando que los datos de usuario y contraseña no coinciden.
  */
 function loginResponse(xml) {
+    var list = xml.getElementsByTagName('user')[0];
 
-
-
+    if (xml.getElementsByTagName('owner')[0]) {
+        console.log(list);
+        userFullName = xml.getElementsByTagName('firstName')[0].textContent + " " + xml.getElementsByTagName('lastName')[0].textContent;
+        userKey = xml.getElementsByTagName('owner')[0].textContent;
+        showLoggedIn();
+    } else {
+        document.getElementById('error').innerHTML = "<h1 style=color:#1ab188;background-color:red;padding:40px;>Datos erróneos</h1>";
+    }
 }
 
 
